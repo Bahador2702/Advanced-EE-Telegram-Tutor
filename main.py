@@ -1,5 +1,4 @@
-# main.py
-
+#!/usr/bin/env python3
 import asyncio
 import logging
 from telegram.ext import (
@@ -9,40 +8,61 @@ from telegram.ext import (
     CallbackQueryHandler,
     filters,
 )
-from bot.handlers.commands import (
-    start_command, help_command, new_course_command, courses_command,
-    course_command, delete_course_command, upload_command, files_command,
-    delete_file_command, mode_command, hint_command, quiz_command,
-    flashcards_command, summarize_command, study_plan_command,
-    reset_session_command, stats_command, debug_retrieval_command,
-    voice_command, retry_command, menu_command
-)
-from bot.handlers.messages import handle_text_message
-# from bot.handlers.images import handle_image
-# from bot.handlers.voice import handle_voice
-# from bot.handlers.callbacks import handle_callback
+
 from utils.config import config
+from utils.logger import setup_logging
+from core.tutor import Tutor
+from core.mode_detector import ModeDetector
+from courses.course_manager import CourseManager
+from retrieval.vector_store import VectorStoreManager
+from retrieval.hybrid_search import HybridSearch
+from memory.short_term import ShortTermMemory
+from bot.handlers import commands, messages, callbacks
 from db.database import init_db
 
 # Setup logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+setup_logging()
 logger = logging.getLogger(__name__)
+
+# Global instances
+tutor = None
+course_manager = None
+vector_manager = None
+hybrid_search = None
+short_memory = None
+
 
 async def post_init(application: Application):
     """Run after bot starts"""
-    logger.info("Initializing database...")
+    global tutor, course_manager, vector_manager, hybrid_search, short_memory
+    
+    logger.info("Initializing bot components...")
+    
+    # Initialize database
     await init_db()
-    logger.info("Telegram Tutor Bot started!")
+    
+    # Initialize core components
+    tutor = Tutor()
+    course_manager = CourseManager()
+    vector_manager = VectorStoreManager()
+    hybrid_search = HybridSearch(vector_manager)
+    short_memory = ShortTermMemory()
+    
+    # Set instances for handlers
+    messages.set_instances(tutor, vector_manager, course_manager, hybrid_search)
+    callbacks.set_instances(course_manager, tutor)
+    
+    logger.info("Bot is ready!")
+
 
 def main():
+    """Main entry point"""
     # Validate config
     try:
         config.validate()
+        logger.info(config.display())
     except ValueError as e:
-        logger.error(f"Config validation failed: {e}")
+        logger.error(f"Config error: {e}")
         return
     
     # Create application
@@ -53,41 +73,25 @@ def main():
         .build()
     )
     
-    # Command handlers
-    application.add_handler(CommandHandler("start", start_command))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("new_course", new_course_command))
-    application.add_handler(CommandHandler("courses", courses_command))
-    application.add_handler(CommandHandler("course", course_command))
-    application.add_handler(CommandHandler("delete_course", delete_course_command))
-    application.add_handler(CommandHandler("upload", upload_command))
-    application.add_handler(CommandHandler("files", files_command))
-    application.add_handler(CommandHandler("delete_file", delete_file_command))
-    application.add_handler(CommandHandler("mode", mode_command))
-    application.add_handler(CommandHandler("hint", hint_command))
-    application.add_handler(CommandHandler("quiz", quiz_command))
-    application.add_handler(CommandHandler("flashcards", flashcards_command))
-    application.add_handler(CommandHandler("summarize", summarize_command))
-    application.add_handler(CommandHandler("study_plan", study_plan_command))
-    application.add_handler(CommandHandler("reset_session", reset_session_command))
-    application.add_handler(CommandHandler("stats", stats_command))
-    application.add_handler(CommandHandler("debug_retrieval", debug_retrieval_command))
-    application.add_handler(CommandHandler("voice", voice_command))
-    application.add_handler(CommandHandler("retry", retry_command))
-    application.add_handler(CommandHandler("menu", menu_command))
+    # Add command handlers
+    application.add_handler(CommandHandler("start", commands.start_command))
+    application.add_handler(CommandHandler("help", commands.help_command))
+    application.add_handler(CommandHandler("new_course", commands.new_course_command))
+    application.add_handler(CommandHandler("courses", commands.courses_command))
+    application.add_handler(CommandHandler("course", commands.course_command))
+    application.add_handler(CommandHandler("mode", commands.mode_command))
+    application.add_handler(CommandHandler("stats", commands.stats_command))
     
-    # Message handlers
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
-    # application.add_handler(MessageHandler(filters.PHOTO, handle_image))
-    # application.add_handler(MessageHandler(filters.VOICE, handle_voice))
-    application.add_handler(MessageHandler(filters.Document.ALL, upload_command))
+    # Add message handlers
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, messages.handle_text_message))
     
-    # Callback handler
-    # application.add_handler(CallbackQueryHandler(handle_callback))
+    # Add callback handler for inline keyboards
+    application.add_handler(CallbackQueryHandler(callbacks.handle_callback))
     
     # Start bot
-    logger.info("Starting bot polling...")
+    logger.info("Starting Telegram Tutor Bot...")
     application.run_polling(allowed_updates=["message", "callback_query"])
+
 
 if __name__ == "__main__":
     main()
