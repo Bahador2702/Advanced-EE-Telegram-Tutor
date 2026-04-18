@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+:root {
+  --bg: #050608;
+  --surface: #0f1218;
+  --accent: #00f2ff;
+  --accent-glow: rgba(0, 242, 255, 0.3);
+  --text-primary: #e0e6ed;
+  --text-secondary: #94a3b8;
+  --border: #1e293b;
+}
+
+@layer base {
+  body {
+    @apply bg-[var(--bg)] text-[var(--text-primary)] font-sans antialiased;
+    background-image: radial-gradient(circle at 50% 50%, #112244 0%, transparent 70%);
+    min-height: 100vh;
+  }
+}
+
+/* Custom layout utility classes derived from design */
+.grid-main {
+  display: grid;
+  grid-template-rows: 60px 1fr 200px;
+  grid-template-columns: 280px 1fr;
+  gap: 1px;
+  @apply h-screen overflow-hidden;
+}
+
+.glass-panel {
+  @apply bg-[var(--surface)] border-[var(--border)];
+}
+
+.neon-shadow {
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.telegram-window {
+  @apply bg-[#0e1621] rounded-t-xl border border-[#2b394a] overflow-hidden flex flex-col;
+}
+
+.msg-bot {
+  @apply bg-[#182533] self-start text-white max-w-[80%] p-2 rounded-lg text-sm leading-relaxed;
+}
+
+.msg-user {
+  @apply bg-[#2b5278] self-end text-white max-w-[80%] p-2 rounded-lg text-sm leading-relaxed;
+}
+
+.tech-item {
+  @apply font-mono text-xs mb-1.5 flex justify-between;
+}
+
+.tech-val {
+  @apply text-[var(--accent)];
+}

@@ -1,0 +1,39 @@
+# Core
+python-telegram-bot==20.7
+python-dotenv==1.0.0
+
+# LLM
+openai==1.30.0
+
+# Vector Search & Retrieval
+faiss-cpu==1.8.0
+rank-bm25==0.2.2
+sentence-transformers==2.2.2
+
+# Database
+sqlalchemy==2.0.25
+alembic==1.13.0
+aiosqlite==0.19.0
+
+# Document Parsing
+pypdf==4.0.1
+python-docx==1.1.0
+markdown==3.5.0
+
+# Multimodal
+Pillow==10.1.0
+pytesseract==0.3.10
+faster-whisper==0.10.0
+
+# Utils
+tenacity==8.2.3
+cachetools==5.3.2
+
+# Logging & Monitoring
+python-json-logger==2.0.7
+
+# Async
+aiofiles==23.2.1
+
+# Export
+reportlab==4.0.7
