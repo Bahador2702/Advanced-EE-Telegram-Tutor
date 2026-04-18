@@ -1,51 +1,89 @@
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+# Load .env from parent directory
+BASE_DIR = Path(__file__).parent.parent
+load_dotenv(BASE_DIR / ".env")
+
 
 class Config:
-    # Telegram
-    TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    """Central configuration manager"""
     
-    # LLM (OpenAI-compatible)
-    LLM_API_KEY = os.getenv("LLM_API_KEY", "")
-    LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.llm7.io/v1")
-    LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o")
+    # ========== Telegram ==========
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
     
-    # Embedding (optional, use same if not specified)
-    EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY", LLM_API_KEY)
-    EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", LLM_BASE_URL)
-    EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+    # ========== LLM Configuration (OpenAI-compatible) ==========
+    LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
+    LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4o")
     
-    # Paths
-    DATA_DIR = os.getenv("DATA_DIR", "./data")
-    COURSES_DIR = os.path.join(DATA_DIR, "courses")
-    DB_PATH = f"sqlite+aiosqlite:///{os.path.join(DATA_DIR, 'tutor.db')}"
+    # ========== Embedding Configuration ==========
+    EMBEDDING_API_KEY: str = os.getenv("EMBEDDING_API_KEY", LLM_API_KEY)
+    EMBEDDING_BASE_URL: str = os.getenv("EMBEDDING_BASE_URL", LLM_BASE_URL)
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
     
-    # Chunking
-    MAX_CHUNK_SIZE = int(os.getenv("MAX_CHUNK_SIZE", "1000"))
-    CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
+    # ========== Paths ==========
+    DATA_DIR: str = os.getenv("DATA_DIR", "./data")
+    COURSES_DIR: str = os.path.join(DATA_DIR, "courses")
+    DB_PATH: str = os.path.join(DATA_DIR, "tutor.db")
+    LOGS_DIR: str = os.getenv("LOGS_DIR", "./logs")
     
-    # Memory
-    MAX_CONVERSATION_HISTORY = int(os.getenv("MAX_CONVERSATION_HISTORY", "20"))
+    # ========== Chunking ==========
+    CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "1000"))
+    CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "200"))
     
-    # Rate limiting
-    RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "30"))
-    RATE_LIMIT_PERIOD = int(os.getenv("RATE_LIMIT_PERIOD", "60"))  # seconds
+    # ========== Retrieval ==========
+    TOP_K_RETRIEVAL: int = int(os.getenv("TOP_K_RETRIEVAL", "5"))
+    HYBRID_SEARCH_ALPHA: float = float(os.getenv("HYBRID_SEARCH_ALPHA", "0.5"))
     
-    # Logging
-    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    # ========== Memory ==========
+    MAX_CONVERSATION_HISTORY: int = int(os.getenv("MAX_CONVERSATION_HISTORY", "20"))
+    
+    # ========== Rate Limiting ==========
+    RATE_LIMIT_REQUESTS: int = int(os.getenv("RATE_LIMIT_REQUESTS", "30"))
+    RATE_LIMIT_PERIOD: int = int(os.getenv("RATE_LIMIT_PERIOD", "60"))
+    
+    # ========== Logging ==========
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    
+    # ========== Voice ==========
+    VOICE_ENABLED: bool = os.getenv("VOICE_ENABLED", "False").lower() == "true"
     
     @classmethod
-    def validate(cls):
-        if not cls.TELEGRAM_BOT_TOKEN:
-            raise ValueError("TELEGRAM_BOT_TOKEN is required")
-        if not cls.LLM_API_KEY:
-            raise ValueError("LLM_API_KEY is required")
+    def validate(cls) -> bool:
+        """Validate required configuration"""
+        errors = []
         
-        # Ensure directories exist
+        if not cls.TELEGRAM_BOT_TOKEN:
+            errors.append("TELEGRAM_BOT_TOKEN is required")
+        if not cls.LLM_API_KEY:
+            errors.append("LLM_API_KEY is required")
+        if not cls.LLM_BASE_URL:
+            errors.append("LLM_BASE_URL is required")
+            
+        if errors:
+            raise ValueError(f"Configuration errors:\n" + "\n".join(errors))
+        
+        # Create directories if not exist
         os.makedirs(cls.DATA_DIR, exist_ok=True)
         os.makedirs(cls.COURSES_DIR, exist_ok=True)
+        os.makedirs(cls.LOGS_DIR, exist_ok=True)
+        
         return True
+    
+    @classmethod
+    def display(cls) -> str:
+        """Show config (hide sensitive data)"""
+        return f"""
+        Telegram Bot: {'✅' if cls.TELEGRAM_BOT_TOKEN else '❌'}
+        LLM Base URL: {cls.LLM_BASE_URL}
+        LLM Model: {cls.LLM_MODEL}
+        Embedding Model: {cls.EMBEDDING_MODEL}
+        Data Dir: {cls.DATA_DIR}
+        Chunk Size: {cls.CHUNK_SIZE}
+        Top K: {cls.TOP_K_RETRIEVAL}
+        """
+
 
 config = Config()
